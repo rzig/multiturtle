@@ -18,7 +18,6 @@ def create_client_id():
 
 rooms = set()
 room_leaders = defaultdict(list)
-room_clients = defaultdict(list)
 
 subscribers = defaultdict(list) # map room => *active* sockets subscribed
 socket_to_room = defaultdict(str) # map all socket => room id
@@ -27,7 +26,6 @@ id_to_name = defaultdict(str)
 
 @routes.post("/create_room")
 async def create_room(request: web.Request):
-    # data = await request.json()
     room_id = create_room_id()
     leader_id = create_client_id()
     rooms.add(room_id)
@@ -42,13 +40,13 @@ async def join_request(request: web.Request):
     if not room_id in rooms:
         return web.json_response({"status": "error", "reason": "room does not exist"})
     else:
-        room_clients[room_id].append(user_id)
+        # no authentication for now
+        await sio.emit("client_join", {"id": user_id}, room=room_id)
         return web.json_response({"status": "accepted"})
 
 @sio.event
 def connect(sid, environ):
     print("connect ", sid)
-    # print(environ)
 
 @sio.event
 async def join_room(sid, data):
@@ -59,15 +57,12 @@ async def join_room(sid, data):
         if client_id in room_leaders[room_id]:
             subscribers[room_id].append(sid)
         sio.enter_room(sid, room_id)
-        print("entering " + str(sid) + " to " + room_id)
     socket_to_room[sid] = room_id
     roles[sid] = role
     id_to_name[sid] = client_id
 
 @sio.event
 async def publish_action(sid,data):
-    print("got publish on server from " + str(sid))
-    print("emitting to room " + str(socket_to_room[sid]))
     await sio.emit("client_action", data, room=socket_to_room[sid])
 
 @sio.event
@@ -82,7 +77,6 @@ async def disconnect(sid):
     else:
         await sio.emit("remote_disconnect", id_to_name[sid], room=room)
         del id_to_name[sid]
-
 
 app.add_routes(routes)
 

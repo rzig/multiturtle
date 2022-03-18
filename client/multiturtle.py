@@ -8,6 +8,7 @@ from enum import Enum,IntEnum
 from collections import defaultdict
 from threading import Thread
 from queue import Queue
+import gc
 
 class ConnectionType(Enum):
     DISCONNECTED = 0
@@ -18,6 +19,7 @@ class ActionType(IntEnum):
     CLASS_CREATE = 1
     CLASS_METHOD = 2
     DIRECT_METHOD = 3
+    JOIN = 4
 
 proxies = dict()
 
@@ -104,7 +106,6 @@ def connect(room:str,name:str):
     try:
         status = join_room(room, name, "student")
         if status != "accepted":
-            print("not accepted")
             raise Exception("Not accepted to room")
         else:
             conn["tp"] = ConnectionType.CLIENT
@@ -118,11 +119,12 @@ def disconnect():
     socket.disconnect()
 
 def wait_for_sockets():
-    print("going to wait for sockets")
     @socket.event
     def client_action(data):
-        print("in nested client action")
         message_queue.put(data)
+    @socket.event
+    def client_join(data):
+        message_queue.put({"type": ActionType.JOIN, "id": data["id"]})
     socket.wait()
 
 def start_share():
@@ -141,16 +143,9 @@ def start_share():
         print(e)
         print("Could not create room. Continuing in local mode.")
 
-@socket.event
-def client_action(data):
-    print('got client action')
-    message_queue.put(data)
-
 def event_responder():
     while True:
-        print("in event responder")
         data = message_queue.get()
-        print("in main thread, got message off of queue")
         action_type = data["type"]
         if action_type == ActionType.CLASS_CREATE:
             cl = data["class"]
@@ -159,17 +154,23 @@ def event_responder():
             instance_id = data["instance"]
             user_id = data["id"]
             user_instances[user_id][instance_id] = turtle.__dict__[cl](*args,**kwargs)
-            print(user_instances[user_id][instance_id])
         elif action_type == ActionType.CLASS_METHOD:
             user_id = data["id"]
             instance_id = data["instance"]
             args = data["args"]
             kwargs = data["kwargs"]
             method = data["method"]
-            print("it's a class method", user_instances)
             if instance_id in user_instances[user_id]:
-                print("calling " + str(method) + " with " + str(args) + " " + str(kwargs))
                 getattr(user_instances[user_id][instance_id], method)(*args,**kwargs)
+        elif action_type == ActionType.JOIN:
+            user_id = data["id"]
+            if user_id in user_instances:
+                for instance_id in user_instances[user_id]:
+                    user_instances[user_id][instance_id].clear()
+                    user_instances[user_id][instance_id].reset()
+                    user_instances[user_id][instance_id].hideturtle()
+                del user_instances[user_id]
+                gc.collect()
 
 def __getattr__(name):
     if name[0] != '_' and name[1] != '_':
