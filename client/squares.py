@@ -1,8 +1,6 @@
 import multiturtle as turtle
 import time
 
-turtle.Screen().setup()
-
 def square(tt, s):
     tt.forward(s)
     tt.left(90)
@@ -13,13 +11,8 @@ def square(tt, s):
     tt.forward(s)
     tt.left(90)
 
-time.sleep(10)
-
-turtle.connect("41KN1", "circles")
-
-# time.sleep(1)
-
-time.sleep(10)
+turtle.connect("LTB1L", "squares")
+turtle.Screen().setup()
 
 t = turtle.Turtle()
 t.color("green", "orange")

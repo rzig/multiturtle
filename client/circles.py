@@ -3,7 +3,7 @@ import time
 
 turtle.Screen().setup()
 
-turtle.connect("41KN1", "circles")
+turtle.connect("LTB1L", "circles")
 
 t = turtle.Turtle()
 t.color("red", "blue")

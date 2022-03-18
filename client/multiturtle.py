@@ -92,12 +92,12 @@ def find_or_create_class_proxy(cls, proxied):
         return proxies[cls]
 
 def create_room():
-    r = requests.post("http://localhost:8080/create_room")
+    r = requests.post("http://multiturtle.xyz:8080/create_room")
     data = r.json()
     return data["room_id"], data["leader_id"]
 
 def join_room(room, name, role):
-    r = requests.post("http://localhost:8080/join_request", json={"room_id": room, "user_id": name, role: role})
+    r = requests.post("http://multiturtle.xyz:8080/join_request", json={"room_id": room, "user_id": name, role: role})
     data = r.json()
     return data["status"]
 
@@ -110,7 +110,7 @@ def connect(room:str,name:str):
         else:
             conn["tp"] = ConnectionType.CLIENT
             conn["name"] = name
-            socket.connect("http://localhost:8080")
+            socket.connect("http://multiturtle.xyz:8080")
             socket.emit('join_room', {'room_id': room, 'id': name, 'role': 'student'})
     except Exception:
         print("Could not connect to room. Continuing in local mode.")
@@ -131,7 +131,7 @@ def start_share():
     try:
         room, leader = create_room()
         conn["tp"] = ConnectionType.LEADER
-        socket.connect("http://localhost:8080")
+        socket.connect("http://multiturtle.xyz:8080")
         conn["name"] = leader
         socket.emit('join_room', {'room_id': room, 'id': leader, 'role': 'leader'})
         print("Leading room " + str(room))
