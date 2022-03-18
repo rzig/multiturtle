@@ -13,7 +13,9 @@ def square(tt, s):
     tt.forward(s)
     tt.left(90)
 
-turtle.connect("4QA8T", "squares")
+time.sleep(10)
+
+turtle.connect("41KN1", "circles")
 
 # time.sleep(1)
 
